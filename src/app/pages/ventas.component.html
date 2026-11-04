@@ -1,0 +1,85 @@
+<section class="page-heading">
+  <span class="eyebrow">MOVIMIENTO / OPERACIONES</span>
+  <h1>Ventas<span class="heading-dot">.</span></h1>
+  <p>Cada operación cuenta una historia.</p>
+</section>
+
+<div class="summary-strip">
+  <div><span>OPERACIONES</span><b>{{ ventas.length }}</b></div>
+  <div><span>VENTAS DEL AÑO</span><b>{{ totalAnio | currency:'ARS':'symbol':'1.0-0' }}</b></div>
+  <div><span>VENTA PROMEDIO</span><b>{{ promedio | currency:'ARS':'symbol':'1.0-0' }}</b></div>
+  <div class="summary-action">@if (auth.isAdmin()) { <button class="button button-dark" (click)="mostrarForm = !mostrarForm">+ Cargar factura</button> }</div>
+</div>
+
+<section class="sales-trend">
+  <div class="section-title"><div><span class="eyebrow">VENTAS / {{ currentYear }}</span><h2>Evolución mensual.</h2></div></div>
+  <div class="sales-bars">
+    @for (month of monthLabels; track month; let i = $index) {
+      <div class="sales-month"><div class="sales-bar-wrap"><div class="sales-bar" [style.height.%]="monthlyHeight(i)" [title]="monthlyTotal(i) | currency:'ARS':'symbol':'1.0-0'"></div></div><span>{{ month }}</span></div>
+    }
+  </div>
+</section>
+
+@if (success) { <p class="status-message status-success" role="status">{{ success }}</p> }
+@if (error) { <p class="status-message status-error" role="alert">{{ error }}</p> }
+
+@if (mostrarForm && auth.isAdmin()) {
+  <form class="invoice-form" (ngSubmit)="crear()">
+    <h3>Nueva factura interna</h3>
+    <div class="form-grid">
+      <label>Cliente<select name="cliente" [(ngModel)]="form.cliente_id" required><option [ngValue]="null">Seleccionar cliente</option>@for (c of clientes; track c.id) { <option [ngValue]="c.id">{{ c.nombre }} {{ c.apellido }}</option> }</select></label>
+      <label>Sucursal<select name="sucursal" [(ngModel)]="form.sucursal_id" required><option [ngValue]="null">Seleccionar sucursal</option>@for (s of sucursales; track s.id) { <option [ngValue]="s.id">{{ s.nombre }}</option> }</select></label>
+      <label>Fecha<input name="fecha" type="date" [(ngModel)]="form.fecha" required></label>
+      <label>Detalle<input name="detalle" [(ngModel)]="form.detalle" placeholder="Descripción" required></label>
+      <label>Importe total<input name="total" type="number" min="0.01" step="0.01" [(ngModel)]="form.total" required></label>
+    </div>
+    <button class="button button-dark" [disabled]="guardando">{{ guardando ? 'Guardando…' : 'Guardar y generar factura' }}</button>
+  </form>
+}
+
+@if (invoice) {
+  <article class="invoice-preview">
+    <div class="receipt-head"><strong>Norte &amp; Co.</strong><span>COMPROBANTE INTERNO · SIN VALIDEZ FISCAL</span></div>
+    <hr><h2>Factura {{ invoice.numero_factura }}</h2><p>Fecha: {{ invoice.fecha | date:'dd/MM/yyyy' }}</p>
+    <section><b>Cliente</b><p>{{ invoice.cliente?.nombre }} {{ invoice.cliente?.apellido }} · Documento {{ invoice.cliente?.documento }}</p><p>{{ invoice.cliente?.email || '—' }} · {{ invoice.cliente?.telefono || '—' }}</p></section>
+    <section><b>Sucursal</b><p>{{ invoice.sucursal?.nombre }} · {{ invoice.sucursal?.direccion }}</p></section>
+    <table><thead><tr><th>DETALLE</th><th>CANT.</th><th>PRECIO</th><th>IMPORTE</th></tr></thead><tbody><tr><td>{{ invoice.detalle }}</td><td>{{ invoice.cantidad }}</td><td>{{ invoice.precio_unitario | currency:'ARS':'symbol':'1.2-2' }}</td><td>{{ invoice.total | currency:'ARS':'symbol':'1.2-2' }}</td></tr></tbody></table>
+    <h3 class="receipt-total">Total: {{ invoice.total | currency:'ARS':'symbol':'1.2-2' }}</h3>
+    <div class="no-print"><button class="button button-dark" (click)="printInvoice()">Imprimir comprobante</button><button class="button button-quiet" (click)="invoice = null">Cerrar</button></div>
+  </article>
+}
+
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>FACTURA</th><th>FECHA</th><th>CLIENTE</th><th>SUCURSAL</th><th>DETALLE</th><th class="right">TOTAL</th>@if (auth.isAdmin()) { <th>ACCIONES</th> }</tr></thead>
+    <tbody>
+      @if (cargando) {
+        <tr><td [attr.colspan]="auth.isAdmin() ? 7 : 6" class="empty">Cargando ventas…</td></tr>
+      } @else {
+        @for (sale of ventas; track sale.id) {
+          <tr>
+            <td><b>{{ sale.numero_factura }}</b></td><td>{{ sale.fecha | date:'dd/MM/yyyy' }}</td><td>{{ sale.cliente }}</td><td>{{ sale.sucursal }}</td><td>{{ sale.detalle }}</td><td class="right">{{ sale.total | currency:'ARS':'symbol':'1.2-2' }}</td>
+            @if (auth.isAdmin()) { <td class="row-actions"><button class="button button-quiet" [disabled]="actualizandoId !== null || eliminandoId !== null" (click)="editar(sale)">Editar</button><button class="button button-danger" [disabled]="actualizandoId !== null || eliminandoId !== null" (click)="eliminar(sale)">{{ eliminandoId === sale.id ? 'Eliminando…' : 'Eliminar' }}</button></td> }
+          </tr>
+          @if (editandoId === sale.id && auth.isAdmin()) {
+            <tr class="edit-row"><td [attr.colspan]="7">
+              <form class="inline-form sales-edit-form" (ngSubmit)="guardarEdicion(sale.id)">
+                <label>Cliente<select name="editCliente" [(ngModel)]="editForm.cliente_id" required>@for (c of clientes; track c.id) { <option [ngValue]="c.id">{{ c.nombre }} {{ c.apellido }}</option> }</select></label>
+                <label>Sucursal<select name="editSucursal" [(ngModel)]="editForm.sucursal_id" required>@for (s of sucursales; track s.id) { <option [ngValue]="s.id">{{ s.nombre }}</option> }</select></label>
+                <label>Fecha<input name="editFecha" type="date" [(ngModel)]="editForm.fecha" required></label>
+                <label>Producto / detalle<input name="editDetalle" [(ngModel)]="editForm.detalle" maxlength="500" required></label>
+                <label>Cantidad<input name="editCantidad" type="number" min="0.01" step="0.01" [(ngModel)]="editForm.cantidad" required></label>
+                <label>Precio unitario<input name="editPrecio" type="number" min="0.01" step="0.01" [(ngModel)]="editForm.precio_unitario" required></label>
+                <span class="edit-total">Nuevo total: {{ totalEdicion | currency:'ARS':'symbol':'1.2-2' }}</span>
+                <div class="row-actions"><button class="button button-dark" [disabled]="actualizandoId === sale.id">{{ actualizandoId === sale.id ? 'Guardando…' : 'Guardar cambios' }}</button><button type="button" class="button button-quiet" (click)="cancelarEdicion()">Cancelar</button></div>
+              </form>
+            </td></tr>
+          }
+        } @empty {
+          <tr><td [attr.colspan]="auth.isAdmin() ? 7 : 6" class="empty">Todavía no hay ventas registradas.</td></tr>
+        }
+      }
+    </tbody>
+  </table>
+</div>
+<p class="note">Los comprobantes son de uso interno y no tienen validez fiscal.</p>

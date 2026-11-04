@@ -1,0 +1,80 @@
+CREATE DATABASE IF NOT EXISTS empresa_demo CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE empresa_demo;
+
+CREATE TABLE IF NOT EXISTS usuarios (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  nombre VARCHAR(120) NOT NULL,
+  email VARCHAR(190) NOT NULL UNIQUE,
+  password_hash VARCHAR(255) NOT NULL,
+  rol ENUM('admin','usuario') NOT NULL DEFAULT 'usuario',
+  activo TINYINT(1) NOT NULL DEFAULT 1,
+  creado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS clientes (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  nombre VARCHAR(80) NOT NULL,
+  apellido VARCHAR(80) NOT NULL,
+  documento VARCHAR(30) NOT NULL UNIQUE,
+  email VARCHAR(190) NULL UNIQUE,
+  telefono VARCHAR(40) NULL,
+  direccion VARCHAR(180) NULL,
+  creado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS sucursales (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  nombre VARCHAR(100) NOT NULL,
+  direccion VARCHAR(180) NOT NULL,
+  empleados SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+  activa TINYINT(1) NOT NULL DEFAULT 1,
+  creado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS ventas (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  numero_factura VARCHAR(40) NOT NULL UNIQUE,
+  fecha DATE NOT NULL,
+  cliente_id INT UNSIGNED NOT NULL,
+  sucursal_id INT UNSIGNED NOT NULL,
+  total DECIMAL(13,2) NOT NULL,
+  creado_por INT UNSIGNED NOT NULL,
+  creado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_venta_cliente FOREIGN KEY(cliente_id) REFERENCES clientes(id),
+  CONSTRAINT fk_venta_sucursal FOREIGN KEY(sucursal_id) REFERENCES sucursales(id),
+  CONSTRAINT fk_venta_usuario FOREIGN KEY(creado_por) REFERENCES usuarios(id),
+  INDEX idx_ventas_fecha_sucursal(fecha,sucursal_id),
+  INDEX idx_ventas_cliente(cliente_id)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS venta_detalles (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  venta_id BIGINT UNSIGNED NOT NULL,
+  descripcion VARCHAR(500) NOT NULL,
+  cantidad DECIMAL(10,2) NOT NULL DEFAULT 1,
+  precio_unitario DECIMAL(13,2) NOT NULL,
+  subtotal DECIMAL(13,2) NOT NULL,
+  CONSTRAINT fk_detalle_venta FOREIGN KEY(venta_id) REFERENCES ventas(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- Sucursales de ejemplo para poder recorrer la pantalla. Las ventas empiezan en cero.
+INSERT IGNORE INTO sucursales(nombre,direccion,empleados) VALUES
+ ('Centro',CONVERT(UNHEX('53616E204D617274C3AD6E20313234302C2053616E7461204665') USING utf8mb4),8),
+ (CONVERT(UNHEX('506172616EC3A1') USING utf8mb4),CONVERT(UNHEX('55727175697A61203536302C20506172616EC3A1') USING utf8mb4),5),
+ ('Rosario',CONVERT(UNHEX('43C3B372646F626120323135302C20526F736172696F') USING utf8mb4),11);
+
+INSERT IGNORE INTO clientes(nombre,apellido,documento,email,telefono,direccion) VALUES
+ (CONVERT(UNHEX('4D6172C3AD61') USING utf8mb4),CONVERT(UNHEX('47C3B36D657A') USING utf8mb4),'30111222','maria.gomez@example.com','342 555 0101','Santa Fe'),
+ ('Juan',CONVERT(UNHEX('50C3A972657A') USING utf8mb4),'28444555','juan.perez@example.com','343 555 0120',CONVERT(UNHEX('506172616EC3A1') USING utf8mb4));
+
+-- Repara filas del conjunto de demostracion si una importacion anterior altero los acentos.
+UPDATE clientes SET nombre=CONVERT(UNHEX('4D6172C3AD61') USING utf8mb4),apellido=CONVERT(UNHEX('47C3B36D657A') USING utf8mb4)
+ WHERE email='maria.gomez@example.com';
+UPDATE clientes SET nombre='Juan',apellido=CONVERT(UNHEX('50C3A972657A') USING utf8mb4)
+ WHERE email='juan.perez@example.com';
+UPDATE sucursales SET direccion=CONVERT(UNHEX('53616E204D617274C3AD6E20313234302C2053616E7461204665') USING utf8mb4)
+ WHERE id=1 AND nombre='Centro';
+UPDATE sucursales SET nombre=CONVERT(UNHEX('506172616EC3A1') USING utf8mb4),direccion=CONVERT(UNHEX('55727175697A61203536302C20506172616EC3A1') USING utf8mb4)
+ WHERE id=2;
+UPDATE sucursales SET direccion=CONVERT(UNHEX('43C3B372646F626120323135302C20526F736172696F') USING utf8mb4)
+ WHERE id=3 AND nombre='Rosario';

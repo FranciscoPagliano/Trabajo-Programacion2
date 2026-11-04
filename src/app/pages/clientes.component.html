@@ -1,0 +1,47 @@
+<section class="page-heading">
+  <span class="eyebrow">RELACIONES / DIRECTORIO</span>
+  <h1>Clientes<span class="heading-dot">.</span></h1>
+  <p>Personas que hacen crecer el negocio.</p>
+</section>
+
+@if (auth.isAdmin()) {
+  <form class="inline-form" (ngSubmit)="crear()">
+    <label>Nombre<input name="nombre" [(ngModel)]="form.nombre" required></label>
+    <label>Apellido<input name="apellido" [(ngModel)]="form.apellido" required></label>
+    <label>Documento<input name="documento" [(ngModel)]="form.documento" required></label>
+    <label>Email<input name="email" [(ngModel)]="form.email" type="email"></label>
+    <label>Teléfono<input name="telefono" [(ngModel)]="form.telefono"></label>
+    <label>Dirección<input name="direccion" [(ngModel)]="form.direccion"></label>
+    <button class="button button-dark">+ Crear cliente</button>
+  </form>
+}
+
+@if (success) { <p class="status-message status-success" role="status">{{ success }}</p> }
+@if (error) { <p class="status-message status-error" role="alert">{{ error }}</p> }
+
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr><th>NOMBRE</th><th>APELLIDO</th><th>DOCUMENTO</th><th>EMAIL</th><th>TELÉFONO</th><th>DIRECCIÓN</th>@if (auth.isAdmin()) { <th>ACCIONES</th> }</tr>
+    </thead>
+    <tbody>
+      @if (cargando) {
+        <tr><td [attr.colspan]="auth.isAdmin() ? 7 : 6" class="empty">Cargando clientes…</td></tr>
+      } @else {
+        @for (cliente of clientes; track cliente.id) {
+          <tr>
+            <td><b>{{ cliente.nombre }}</b></td>
+            <td><b>{{ cliente.apellido }}</b></td>
+            <td>{{ cliente.documento }}</td>
+            <td>{{ cliente.email || '—' }}</td>
+            <td>{{ cliente.telefono || '—' }}</td>
+            <td>{{ cliente.direccion || '—' }}</td>
+            @if (auth.isAdmin()) { <td><button class="button button-danger" [disabled]="eliminandoId !== null" (click)="eliminar(cliente)">{{ eliminandoId === cliente.id ? 'Eliminando…' : 'Eliminar' }}</button></td> }
+          </tr>
+        } @empty {
+          <tr><td [attr.colspan]="auth.isAdmin() ? 7 : 6" class="empty">Todavía no hay clientes cargados.</td></tr>
+        }
+      }
+    </tbody>
+  </table>
+</div>

@@ -1,0 +1,138 @@
+<section class="page-heading">
+  <span class="eyebrow">OPERACIONES / RED</span>
+  <h1>Sucursales<span class="heading-dot">.</span></h1>
+  <p>Un mapa vivo del rendimiento, sucursal por sucursal.</p>
+</section>
+
+<div class="toolbar">
+  <label>AÑO
+    <select [(ngModel)]="anio" (ngModelChange)="cargarSeries()">
+      @for (year of years; track year) { <option [ngValue]="year">{{ year }}</option> }
+    </select>
+  </label>
+  <label>SUCURSAL
+    <select [(ngModel)]="sucursalFiltro">
+      <option [ngValue]="0">Todas las sucursales</option>
+      @for (sucursal of sucursales; track sucursal.id) { <option [ngValue]="sucursal.id">{{ sucursal.nombre }}</option> }
+    </select>
+  </label>
+  @if (auth.isAdmin()) { <button class="button button-dark" (click)="mostrarForm = !mostrarForm">+ Nueva sucursal</button> }
+</div>
+
+@if (mostrarForm) {
+  <form class="inline-form" (ngSubmit)="crear()">
+    <label>Nombre<input name="nombre" [(ngModel)]="form.nombre" required></label>
+    <label>Dirección<input name="direccion" [(ngModel)]="form.direccion" required></label>
+    <label>Cantidad de empleados<input name="empleados" [(ngModel)]="form.empleados" type="number" min="0" required></label>
+    <button class="button button-dark">Guardar sucursal</button>
+  </form>
+}
+
+@if (success) { <p class="status-message status-success" role="status">{{ success }}</p> }
+@if (error) { <p class="status-message status-error" role="alert">{{ error }}</p> }
+
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr><th>SUCURSAL</th><th>DIRECCIÓN</th><th>EQUIPO</th>@for (month of monthLabels; track month) { <th>{{ month }}</th> }<th>TOTAL</th>@if (auth.isAdmin()) { <th>ACCIONES</th> }</tr>
+    </thead>
+    <tbody>
+      @if (cargando) {
+        <tr><td [attr.colspan]="auth.isAdmin() ? 17 : 16" class="empty">Cargando sucursales…</td></tr>
+      } @else {
+        @for (serie of filteredSeries; track serie.sucursal_id) {
+          <tr><td><b>{{ serie.sucursal }}</b></td><td>{{ direccion(serie.sucursal_id) }}</td><td>{{ empleados(serie.sucursal_id) }}</td>
+            @for (value of serie.meses; track $index) { <td>{{ value | number:'1.2-2' }}</td> }
+            <td><b>{{ serie.total | number:'1.2-2' }}</b></td>
+            @if (auth.isAdmin()) { <td><button class="button button-danger" [disabled]="eliminandoId !== null" (click)="eliminarPorId(serie.sucursal_id)">{{ eliminandoId === serie.sucursal_id ? 'Eliminando…' : 'Eliminar' }}</button></td> }
+          </tr>
+        } @empty {
+          <tr><td [attr.colspan]="auth.isAdmin() ? 17 : 16" class="empty">Todavía no hay sucursales.</td></tr>
+        }
+      }
+    </tbody>
+  </table>
+</div>
+
+<div class="section-title">
+  <div><span class="eyebrow">ANÁLISIS / {{ anio }}</span><h2>El año, en perspectiva.</h2></div>
+  <p>Importes de facturas registradas en el período seleccionado.</p>
+</div>
+
+<div class="chart-grid">
+  <article class="chart-card">
+    <span class="eyebrow">01 / COMPOSICIÓN</span>
+    <h3>Columnas Apiladas</h3>
+    <svg viewBox="0 0 600 300" role="img" aria-label="Columnas apiladas de ventas mensuales por sucursal">
+      <rect width="600" height="300" fill="white" />
+      @for (tick of ticks; track tick) {
+        <line x1="50" [attr.y1]="tickY(tick)" x2="570" [attr.y2]="tickY(tick)" stroke="#dddddd" stroke-dasharray="4" />
+        <text x="40" [attr.y]="tickY(tick) + 4" text-anchor="end">{{ tickValue(tick, true) | number:'1.0-0' }}</text>
+      }
+      <line x1="50" y1="260" x2="570" y2="260" stroke="black" stroke-width="2" />
+      <line x1="50" y1="30" x2="50" y2="260" stroke="black" stroke-width="2" />
+      @for (value of monthLabels; track value; let month = $index) {
+        <text [attr.x]="monthCenter(month)" y="280" text-anchor="middle">{{ value }}</text>
+      }
+      @for (serie of filteredSeries; track serie.sucursal_id; let branch = $index) {
+        @for (value of serie.meses; track $index; let month = $index) {
+          <rect [attr.x]="monthX(month)" [attr.y]="stackTop(month, branch, value)" [attr.width]="monthWidth" [attr.height]="scaledHeight(value, maxStack())" [attr.fill]="color(branch)">
+            <title>{{ serie.sucursal }}: {{ value | number:'1.2-2' }}</title>
+          </rect>
+        }
+      }
+    </svg>
+    <div class="legend"><span class="legend-title">Referencias:</span>@for (serie of filteredSeries; track serie.sucursal_id; let branch = $index) { <span><i [style.background]="color(branch)"></i>{{ serie.sucursal }}</span> }</div>
+  </article>
+
+  <article class="chart-card">
+    <span class="eyebrow">02 / COMPARACIÓN</span>
+    <h3>Ventas por Sucursal</h3>
+    <svg viewBox="0 0 600 300" role="img" aria-label="Ventas mensuales agrupadas por sucursal">
+      <rect width="600" height="300" fill="white" />
+      @for (tick of ticks; track tick) {
+        <line x1="50" [attr.y1]="tickY(tick)" x2="570" [attr.y2]="tickY(tick)" stroke="#dddddd" stroke-dasharray="4" />
+        <text x="40" [attr.y]="tickY(tick) + 4" text-anchor="end">{{ tickValue(tick, false) | number:'1.0-0' }}</text>
+      }
+      <line x1="50" y1="260" x2="570" y2="260" stroke="black" stroke-width="2" />
+      <line x1="50" y1="30" x2="50" y2="260" stroke="black" stroke-width="2" />
+      @for (value of monthLabels; track value; let month = $index) {
+        <text [attr.x]="monthCenter(month)" y="280" text-anchor="middle">{{ value }}</text>
+      }
+      @for (serie of filteredSeries; track serie.sucursal_id; let branch = $index) {
+        @for (value of serie.meses; track $index; let month = $index) {
+          <rect [attr.x]="groupX(month, branch)" [attr.y]="260 - scaledHeight(value, maxSingle())" [attr.width]="groupBarWidth() - 1" [attr.height]="scaledHeight(value, maxSingle())" [attr.fill]="color(branch)">
+            <title>{{ serie.sucursal }}: {{ value | number:'1.2-2' }}</title>
+          </rect>
+        }
+      }
+    </svg>
+    <div class="legend"><span class="legend-title">Referencias:</span>@for (serie of filteredSeries; track serie.sucursal_id; let branch = $index) { <span><i [style.background]="color(branch)"></i>{{ serie.sucursal }}</span> }</div>
+  </article>
+
+  <article class="chart-card chart-wide">
+    <span class="eyebrow">03 / EVOLUCIÓN</span>
+    <h3>Tendencia de Ventas</h3>
+    <svg viewBox="0 0 600 300" role="img" aria-label="Tendencia de ventas por sucursal a lo largo de los meses">
+      <rect width="600" height="300" fill="white" />
+      @for (tick of ticks; track tick) {
+        <line x1="50" [attr.y1]="tickY(tick)" x2="570" [attr.y2]="tickY(tick)" stroke="#dddddd" stroke-dasharray="4" />
+        <text x="40" [attr.y]="tickY(tick) + 4" text-anchor="end">{{ tickValue(tick, false) | number:'1.0-0' }}</text>
+      }
+      <line x1="50" y1="260" x2="570" y2="260" stroke="black" stroke-width="2" />
+      <line x1="50" y1="30" x2="50" y2="260" stroke="black" stroke-width="2" />
+      @for (value of monthLabels; track value; let month = $index) {
+        <text [attr.x]="monthCenter(month)" y="280" text-anchor="middle">{{ value }}</text>
+      }
+      @for (serie of filteredSeries; track serie.sucursal_id; let branch = $index) {
+        <polyline fill="none" [attr.stroke]="color(branch)" stroke-width="3" [attr.points]="linePoints(serie.meses)" />
+        @for (value of serie.meses; track $index; let month = $index) {
+          <circle [attr.cx]="monthCenter(month)" [attr.cy]="260 - scaledHeight(value, maxSingle())" r="4" fill="white" [attr.stroke]="color(branch)" stroke-width="2">
+            <title>{{ serie.sucursal }}: {{ value | number:'1.2-2' }}</title>
+          </circle>
+        }
+      }
+    </svg>
+    <div class="legend"><span class="legend-title">Referencias:</span>@for (serie of filteredSeries; track serie.sucursal_id; let branch = $index) { <span><i [style.background]="color(branch)"></i>{{ serie.sucursal }}</span> }</div>
+  </article>
+</div>

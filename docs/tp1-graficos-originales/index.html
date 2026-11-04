@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Resumen de Ventas</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+  <div id="contenedor"></div>
+
+  <div class="leyenda" id="leyenda"></div>
+
+  <div class="grafico">
+    <h3>Columnas Apiladas</h3>
+    <svg id="GraficoApilado" width="600" height="300"></svg>
+  </div>
+
+  <div class="grafico">
+    <h3>Ventas por Sucursal</h3>
+    <svg id="GraficoBarras" width="600" height="300"></svg>
+  </div>
+
+  <div class="grafico">
+    <h3>Tendencia de Ventas</h3>
+    <svg id="GraficoLineas" width="600" height="300"></svg>
+  </div>
+
+  <script>
+    let datos = [];
+    let sucursales = ["Mes", "Santa Fe", "Paraná", "Santo Tomé", "Rafaela", "Rosario"];
+    let meses = ["", "ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"];
+    let colores = ["#4a76a8", "#45a049", "#ff9800", "#c94f7c", "#7b5ea7"];
+
+    for(let f=0; f<=12; f++){
+      datos[f] = ["0", 0, 0, 0, 0, 0];
+    }
+
+    for(let f=1; f<=12; f++){
+      for(let c=1; c<sucursales.length; c++){
+        datos[f][c] = Math.round(50 + Math.random() * 50);
+      }
+    }
+
+    function dibujarTabla(){
+      let tabla = "<table>";
+      tabla += "<caption>Resumen de Ventas 2026</caption>";
+      tabla += "<thead><tr>";
+
+      for(let x=0; x<sucursales.length; x++){
+        tabla += "<th>" + sucursales[x] + "</th>";
+      }
+
+      tabla += "</tr></thead><tbody>";
+
+      for(let f=1; f<=12; f++){
+        tabla += "<tr>";
+        tabla += "<td>" + meses[f] + "</td>";
+
+        for(let c=1; c<sucursales.length; c++){
+          tabla += "<td class='dato' contenteditable='true' data-f='" + f + "' data-c='" + c + "'>" + datos[f][c] + "</td>";
+        }
+
+        tabla += "</tr>";
+      }
+
+      tabla += "</tbody></table>";
+
+      document.getElementById("contenedor").innerHTML = tabla;
+
+      document.querySelectorAll(".dato").forEach(function(celda){
+        celda.addEventListener("keydown", function(e){
+          if(e.key === "Enter"){
+            e.preventDefault();
+            celda.blur();
+          }
+        });
+
+        celda.addEventListener("blur", function(){
+          let f = celda.dataset.f;
+          let c = celda.dataset.c;
+          let valor = parseInt(celda.innerText);
+
+          if(isNaN(valor) || valor < 0){
+            valor = 0;
+            celda.innerText = 0;
+          }
+
+          datos[f][c] = valor;
+
+          dibujarBarrasApiladas();
+          dibujarBarras();
+          dibujarLineas();
+        });
+      });
+    }
+
+    const anchoSvg = 600;
+    const altoSvg = 300;
+    const margen = { sup:30, der:30, inf:40, izq:50 };
+    const anchoGrafico = anchoSvg - margen.izq - margen.der;
+    const altoGrafico = altoSvg - margen.sup - margen.inf;
+
+    function maximoSimple(){
+      let max = 100;
+
+      for(let f=1; f<=12; f++){
+        for(let c=1; c<sucursales.length; c++){
+          if(datos[f][c] > max){
+            max = datos[f][c];
+          }
+        }
+      }
+
+      return max;
+    }
+
+    function maximoApilado(){
+      let max = 500;
+
+      for(let f=1; f<=12; f++){
+        let suma = 0;
+
+        for(let c=1; c<sucursales.length; c++){
+          suma += datos[f][c];
+        }
+
+        if(suma > max){
+          max = suma;
+        }
+      }
+
+      return max;
+    }
+
+    function crearBase(maxValor){
+      let contenido = "<rect width='100%' height='100%' fill='white'/>";
+
+      contenido += "<line x1='" + margen.izq + "' y1='" + (altoSvg - margen.inf) + "' x2='" + (anchoSvg - margen.der) + "' y2='" + (altoSvg - margen.inf) + "' stroke='black' stroke-width='2'/>";
+      contenido += "<line x1='" + margen.izq + "' y1='" + margen.sup + "' x2='" + margen.izq + "' y2='" + (altoSvg - margen.inf) + "' stroke='black' stroke-width='2'/>";
+
+      for(let i=0; i<=4; i++){
+        let valor = Math.round((maxValor / 4) * i);
+        let y = altoSvg - margen.inf - (altoGrafico / 4) * i;
+
+        contenido += "<line x1='" + margen.izq + "' y1='" + y + "' x2='" + (anchoSvg - margen.der) + "' y2='" + y + "' stroke='#dddddd' stroke-dasharray='4'/>";
+        contenido += "<text x='" + (margen.izq - 10) + "' y='" + (y + 4) + "' font-family='Arial' font-size='11' text-anchor='end'>" + valor + "</text>";
+      }
+
+      let anchoMes = anchoGrafico / 12;
+
+      for(let f=1; f<=12; f++){
+        let x = margen.izq + (f - 1) * anchoMes + anchoMes / 2;
+        contenido += "<text x='" + x + "' y='" + (altoSvg - margen.inf + 20) + "' font-family='Arial' font-size='11' text-anchor='middle'>" + meses[f] + "</text>";
+      }
+
+      return contenido;
+    }
+
+    function dibujarBarrasApiladas(){
+      let svg = document.getElementById("GraficoApilado");
+      let maxValor = maximoApilado();
+      let html = crearBase(maxValor);
+      let anchoBarra = anchoGrafico / 12;
+
+      for(let f=1; f<=12; f++){
+        let x = margen.izq + (f - 1) * anchoBarra;
+        let yAcumulado = altoSvg - margen.inf;
+
+        for(let c=1; c<sucursales.length; c++){
+          let valor = datos[f][c];
+          let altoBarra = (valor / maxValor) * altoGrafico;
+          yAcumulado -= altoBarra;
+
+          html += "<rect x='" + x + "' y='" + yAcumulado + "' width='" + anchoBarra + "' height='" + altoBarra + "' fill='" + colores[c-1] + "'>";
+          html += "<title>" + sucursales[c] + ": " + valor + "</title>";
+          html += "</rect>";
+        }
+      }
+
+      svg.innerHTML = html;
+    }
+
+    function dibujarBarras(){
+      let svg = document.getElementById("GraficoBarras");
+      let maxValor = maximoSimple();
+      let html = crearBase(maxValor);
+      let anchoGrupo = anchoGrafico / 12;
+      let anchoBarra = (anchoGrupo * 0.7) / 5;
+
+      for(let f=1; f<=12; f++){
+        let xInicio = margen.izq + (f - 1) * anchoGrupo + (anchoGrupo * 0.15);
+
+        for(let c=1; c<sucursales.length; c++){
+          let valor = datos[f][c];
+          let altoBarra = (valor / maxValor) * altoGrafico;
+          let x = xInicio + (c - 1) * anchoBarra;
+          let y = altoSvg - margen.inf - altoBarra;
+
+          html += "<rect x='" + x + "' y='" + y + "' width='" + (anchoBarra - 1) + "' height='" + altoBarra + "' fill='" + colores[c-1] + "'>";
+          html += "<title>" + sucursales[c] + ": " + valor + "</title>";
+          html += "</rect>";
+        }
+      }
+
+      svg.innerHTML = html;
+    }
+
+    function dibujarLineas(){
+      let svg = document.getElementById("GraficoLineas");
+      let maxValor = maximoSimple();
+      let html = crearBase(maxValor);
+      let pasoX = anchoGrafico / 12;
+
+      for(let c=1; c<sucursales.length; c++){
+        let puntos = "";
+
+        for(let f=1; f<=12; f++){
+          let valor = datos[f][c];
+          let x = margen.izq + (f - 1) * pasoX + pasoX / 2;
+          let y = altoSvg - margen.inf - (valor / maxValor) * altoGrafico;
+
+          puntos += x + "," + y + " ";
+        }
+
+        html += "<polyline fill='none' stroke='" + colores[c-1] + "' stroke-width='3' points='" + puntos + "'/>";
+
+        for(let f=1; f<=12; f++){
+          let valor = datos[f][c];
+          let x = margen.izq + (f - 1) * pasoX + pasoX / 2;
+          let y = altoSvg - margen.inf - (valor / maxValor) * altoGrafico;
+
+          html += "<circle cx='" + x + "' cy='" + y + "' r='4' fill='white' stroke='" + colores[c-1] + "' stroke-width='2'>";
+          html += "<title>" + sucursales[c] + ": " + valor + "</title>";
+          html += "</circle>";
+        }
+      }
+
+      svg.innerHTML = html;
+    }
+
+    function dibujarLeyenda(){
+      let html = "Referencias: ";
+
+      for(let i=1; i<sucursales.length; i++){
+        html += "<span><span class='cuadro' style='background:" + colores[i-1] + "'></span>" + sucursales[i] + "</span>";
+      }
+
+      document.getElementById("leyenda").innerHTML = html;
+    }
+
+    dibujarTabla();
+    dibujarLeyenda();
+    dibujarBarrasApiladas();
+    dibujarBarras();
+    dibujarLineas();
+  </script>
+</body>
+</html>

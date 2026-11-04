@@ -1,0 +1,73 @@
+    body{
+      font-family: Arial, sans-serif;
+      background:#f2f2f2;
+      margin:20px;
+    }
+
+    table{
+      border-collapse:collapse;
+      margin-bottom:20px;
+      background:white;
+    }
+
+    caption{
+      font-size:18px;
+      font-weight:bold;
+      margin-bottom:10px;
+    }
+
+    th{
+      background:#4a76a8;
+      color:white;
+    }
+
+    th,td{
+      padding:6px 12px;
+      text-align:center;
+      border:1px solid gray;
+    }
+
+    td{
+      background:white;
+    }
+
+    td:hover{
+      background:#d9ecff;
+    }
+
+    .dato{
+      cursor:pointer;
+    }
+
+    .dato:focus{
+      outline:2px solid #4a76a8;
+      background:#eef6ff;
+    }
+
+    .grafico{
+      margin:20px 0;
+    }
+
+    svg{
+      border:1px solid black;
+      background:white;
+    }
+
+    h3{
+      margin-bottom:8px;
+      font-size:16px;
+    }
+
+    .leyenda{
+      margin-bottom:15px;
+      font-size:14px;
+    }
+
+    .cuadro{
+      display:inline-block;
+      width:12px;
+      height:12px;
+      margin-left:10px;
+      margin-right:4px;
+    }
+  
