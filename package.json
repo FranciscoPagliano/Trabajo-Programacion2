@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "ng": "ng",
-    "start": "ng serve --host 127.0.0.1 --port 64328"
+    "start": "ng serve --host 127.0.0.1 --port 4200"
   },
   "dependencies": {
     "@angular/animations": "^20.3.0",

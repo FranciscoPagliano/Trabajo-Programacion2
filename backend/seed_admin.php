@@ -11,6 +11,6 @@ $st=$pdo->prepare('SELECT id FROM usuarios WHERE email=?');
 $st->execute([$email]);
 if($st->fetch()){echo "Ya existe el usuario $email.\n";exit;}
 $hash=password_hash($password,PASSWORD_DEFAULT);
-$st=$pdo->prepare("INSERT INTO usuarios(nombre,email,password_hash,rol) VALUES('Administración',?,?,'admin')");
+$st=$pdo->prepare("INSERT INTO usuarios(nombre,email,password_hash,rol,categoria) VALUES('Administración',?,?,'admin',10)");
 $st->execute([$email,$hash]);
 echo "Administrador creado: $email\nContraseña inicial: $password\nCambiála luego de ingresar.\n";

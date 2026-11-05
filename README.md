@@ -4,9 +4,7 @@ Aplicación de ejemplo para presentar una gestión de clientes, sucursales y ven
 
 ## Estado de esta instalación
 
-El proyecto ya quedó configurado en este equipo: dependencias de Angular instaladas, API copiada a `C:\xampp\htdocs\empresa-api`, esquema importado en MySQL y administrador inicial creado. Iniciá Apache y MySQL desde XAMPP Control Panel si se detienen. Angular se inicia en `http://127.0.0.1:64328`.
-
-La base local tiene ahora una factura de validación `NC-20261104-A60FFF` por $8.750,50, asociada a María Gómez y la sucursal Centro. Se cargó para comprobar el resumen y los gráficos; el script SQL de inicio sigue sin crear ventas ficticias.
+El proyecto usa Angular en `http://127.0.0.1:4200` y la API PHP servida por XAMPP en `http://localhost/empresa-api/api`. Iniciá Apache y MySQL desde XAMPP Control Panel si se detienen. Angular reenvía las llamadas `/api` a PHP mediante `proxy.conf.json`, por lo que la sesión conserva el mismo origen del frontend.
 
 ## Requisitos detectados
 
@@ -29,9 +27,10 @@ La base local tiene ahora una factura de validación `NC-20261104-A60FFF` por $8
    C:\xampp\php\php.exe seed_admin.php
    ```
 
-   Acceso inicial ya creado: `admin@empresa.local` / `Admin123!`. Para elegir otra contraseña al crear la cuenta, definí `EMPRESA_ADMIN_PASSWORD` en esa consola.
+   Acceso inicial ya creado: `admin@empresa.local` / `Admin123!` (categoría 10). Para elegir otra contraseña al crear la cuenta, definí `EMPRESA_ADMIN_PASSWORD` en esa consola.
    Para cambiar la clave inicial ya creada, definí `EMPRESA_ADMIN_PASSWORD` (mínimo 12 caracteres) y ejecutá `C:\xampp\php\php.exe change_admin_password.php`.
-5. La API queda en `http://localhost/empresa-api/api`. Las sucursales se pueden consultar sin login; Clientes, Ventas y las operaciones de escritura requieren la sesión/rol que corresponda.
+   En una base existente, importá `database/migrate_user_categories.sql` una vez para agregar `usuarios.categoria` y elevar a categoría 10 las cuentas antiguas con `rol='admin'`. Para crear las cuentas de prueba 0–11, definí `EMPRESA_TEST_PASSWORD` y ejecutá `C:\xampp\php\php.exe seed_test_users.php` desde `C:\xampp\htdocs\empresa-api`.
+5. La API queda en `http://localhost/empresa-api/api`. Las sucursales se pueden consultar con sesión; Clientes y Ventas requieren sesión. Las escrituras requieren categoría 10 u 11. Durante el desarrollo Angular la consume por `/api` a través del proxy.
 
 ## Iniciar Angular
 
@@ -42,12 +41,12 @@ npm install
 npm start
 ```
 
-Abrí `http://127.0.0.1:64328`. La API permite CORS con credenciales desde los puertos locales 4200 y 64328. Se usa la sesión PHP en una cookie HttpOnly.
+Abrí `http://127.0.0.1:4200` (también podés usar `http://localhost:4200`). Ejecutá `npm start` para iniciar Angular. El proxy `proxy.conf.json` envía `/api/...` a `http://localhost/empresa-api/api/...`; PHP permite CORS con credenciales para `http://127.0.0.1:4200` y `http://localhost:4200` si se consulta la API directamente. La sesión PHP usa una cookie HttpOnly.
 
 ## Probar la aplicación
 
 - Home y Sucursales son públicas. Clientes y Ventas requieren iniciar sesión.
-- Entrá como administrador para crear clientes, sucursales y ventas. Usuarios con rol `usuario` pueden consultar Clientes y Ventas, pero la API les niega las escrituras. No hay formulario público para registrar usuarios: el alta de cuentas se realiza desde MySQL con contraseñas generadas mediante `password_hash()`.
+- Categorías 0–9 pueden consultar Clientes, Sucursales, Ventas y gráficos. Categorías 10–11 también pueden crear, editar y eliminar; Angular y PHP verifican la categoría. No hay registro público: las cuentas se crean por consola con contraseñas guardadas mediante `password_hash()`.
 - El formulario de venta genera un comprobante interno `NC-...`, guarda cabecera y detalle dentro de una transacción, y el importe aparece de inmediato en el resumen y el mes de la sucursal correspondiente. El comprobante no es fiscal.
 - El filtro de sucursal y año actualiza la tabla y los tres gráficos de la sección Sucursales.
 - Clientes y Sucursales incluyen borrado con confirmación; la API devuelve `409` si existen ventas asociadas y `403` para roles que no son administrador.
@@ -66,3 +65,5 @@ ventas 1 ─── N venta_detalles
 ## Configuración de conexión
 
 Copiá `backend/.env.example` como referencia. XAMPP no carga `.env` por defecto: configura las variables `EMPRESA_DB_HOST`, `EMPRESA_DB_NAME`, `EMPRESA_DB_USER` y `EMPRESA_DB_PASS` en Apache si necesitás otros valores. Alternativamente, ajustá los valores predeterminados en `backend/api/bootstrap.php`.
+
+Para la explicación del segundo parcial, la comparación con los ejemplos del profesor, el listado exacto de archivos a entregar y el recorrido de prueba, consultá [`docs/SEGUNDO_PARCIAL.md`](docs/SEGUNDO_PARCIAL.md).

@@ -1,6 +1,7 @@
 import { CurrencyPipe, DatePipe } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { AuthService } from '../core/auth.service';
 import { DataService } from '../core/data.service';
 import { Cliente, Sucursal, Venta } from '../core/models';
@@ -46,6 +47,7 @@ export class VentasComponent {
   editForm: FormEdicionVenta = { cliente_id: 0, sucursal_id: 0, fecha: this.today(), detalle: '', cantidad: 1, precio_unitario: 0 };
 
   constructor() {
+    this.mostrarForm = inject(ActivatedRoute).snapshot.url.some(segment => segment.path === 'nueva');
     this.cargar();
     this.data.clientes().subscribe({ next: rows => { this.clientes = rows; }, error: () => { this.error = 'No se pudieron cargar los clientes.'; } });
     this.data.sucursales().subscribe({ next: rows => { this.sucursales = rows; }, error: () => { this.error = 'No se pudieron cargar las sucursales.'; } });

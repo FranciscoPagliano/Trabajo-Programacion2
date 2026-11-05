@@ -23,7 +23,7 @@
           "configurations": {"production":{"optimization":true,"outputHashing":"all","budgets":[{"type":"initial","maximumWarning":"1MB","maximumError":"2MB"},{"type":"anyComponentStyle","maximumWarning":"8kB","maximumError":"12kB"}]},"development":{"optimization":false,"extractLicenses":false,"sourceMap":true}},
           "defaultConfiguration": "production"
         },
-        "serve": {"builder":"@angular/build:dev-server","configurations":{"production":{"buildTarget":"empresa-demo:build:production"},"development":{"buildTarget":"empresa-demo:build:development"}},"defaultConfiguration":"development"}
+        "serve": {"builder":"@angular/build:dev-server","options":{"proxyConfig":"proxy.conf.json"},"configurations":{"production":{"buildTarget":"empresa-demo:build:production"},"development":{"buildTarget":"empresa-demo:build:development"}},"defaultConfiguration":"development"}
       }
     }
   },

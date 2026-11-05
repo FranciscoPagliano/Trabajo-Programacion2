@@ -1,6 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { AuthService } from '../core/auth.service';
 import { DataService } from '../core/data.service';
 import { SerieMensual, Sucursal } from '../core/models';
@@ -30,6 +31,7 @@ export class SucursalesComponent {
   readonly monthWidth = 520 / 12;
 
   constructor() {
+    this.mostrarForm = inject(ActivatedRoute).snapshot.url.some(segment => segment.path === 'nueva');
     this.data.sucursales().subscribe({ next: rows => { this.sucursales = rows; this.cargando = false; }, error: () => { this.error = 'No se pudieron cargar las sucursales.'; this.cargando = false; } });
     this.cargarSeries();
   }

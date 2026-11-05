@@ -1,0 +1,8 @@
+{
+  "/api": {
+    "target": "http://localhost/empresa-api",
+    "secure": false,
+    "changeOrigin": true,
+    "logLevel": "info"
+  }
+}

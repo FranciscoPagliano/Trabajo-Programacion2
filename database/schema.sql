@@ -7,8 +7,10 @@ CREATE TABLE IF NOT EXISTS usuarios (
   email VARCHAR(190) NOT NULL UNIQUE,
   password_hash VARCHAR(255) NOT NULL,
   rol ENUM('admin','usuario') NOT NULL DEFAULT 'usuario',
+  categoria TINYINT UNSIGNED NOT NULL DEFAULT 0,
   activo TINYINT(1) NOT NULL DEFAULT 1,
-  creado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+  creado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT chk_usuarios_categoria CHECK (categoria BETWEEN 0 AND 11)
 ) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS clientes (
@@ -71,6 +73,8 @@ INSERT IGNORE INTO clientes(nombre,apellido,documento,email,telefono,direccion) 
 UPDATE clientes SET nombre=CONVERT(UNHEX('4D6172C3AD61') USING utf8mb4),apellido=CONVERT(UNHEX('47C3B36D657A') USING utf8mb4)
  WHERE email='maria.gomez@example.com';
 UPDATE clientes SET nombre='Juan',apellido=CONVERT(UNHEX('50C3A972657A') USING utf8mb4)
+ WHERE email='juan.perez@example.com';
+UPDATE clientes SET direccion=CONVERT(UNHEX('506172616EC3A1') USING utf8mb4)
  WHERE email='juan.perez@example.com';
 UPDATE sucursales SET direccion=CONVERT(UNHEX('53616E204D617274C3AD6E20313234302C2053616E7461204665') USING utf8mb4)
  WHERE id=1 AND nombre='Centro';
